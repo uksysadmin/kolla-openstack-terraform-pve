@@ -1,0 +1,21 @@
+- hosts: control
+  become: true
+  tasks:
+    - name: Create add-br-ex-ip service
+      ansible.builtin.copy:
+        src: add-br-ex-ip.service
+        dest: /etc/systemd/system/add-br-ex-ip.service
+        mode: '0644'
+        force: true
+
+    - name: Run the add-br-ex-ip.service
+      ansible.builtin.systemd_service:
+        name: unattended-upgrades.service
+        daemon_reload: true
+        state: started
+
+    - name: Add as a job to crontab
+      ansible.builtin.lineinfile:
+        dest: /etc/crontab
+        line: "@reboot root /usr/bin/systemctl start add-br-ex-ip.service"
+        insertafter: EOF
