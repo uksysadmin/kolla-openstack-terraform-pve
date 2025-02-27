@@ -8,8 +8,8 @@ terraform {
 }
 provider "proxmox" {
   pm_api_url = "https://${var.proxmox_host}:8006/api2/json" # change this to match your own proxmox
-  pm_api_token_id = "${vars.proxmox_api_token_id}"
-  pm_api_token_secret = "${vars.proxmox_api_token_secret}"
+  pm_api_token_id = "${var.proxmox_api_token_id}"
+  pm_api_token_secret = "${var.proxmox_api_token_secret}"
   pm_tls_insecure = true
   pm_log_enable = true
   pm_log_file   = "terraform-plugin-proxmox-vm.log"
@@ -17,7 +17,7 @@ provider "proxmox" {
 resource "proxmox_vm_qemu" "controllers" {
   count = 1
   name = "controller-0${count.index + 1}"
-  target_node = "${vars.pve_node}"
+  target_node = "${var.pve_node}"
   vmid = "200${count.index + 1}"
   clone = "${var.template_name}"
   full_clone = "false"
@@ -70,7 +70,7 @@ resource "proxmox_vm_qemu" "controllers" {
 resource "proxmox_vm_qemu" "compute" {
   count = 2
   name = "compute-0${count.index + 1}"
-  target_node = "${vars.pve_node}"
+  target_node = "${var.pve_node}"
   vmid = "210${count.index + 1}"
   clone = "${var.template_name}"
   full_clone = "false"
