@@ -1,0 +1,41 @@
+- hosts: deployment
+  become: true
+  tasks:
+    - name: Bootstrap Kolla-Ansible OpenStack
+      ansible.builtin.shell: |
+        source /opt/kolla/bin/activate
+        /opt/kolla/bin/kolla-ansible bootstrap-servers --log-file /opt/kolla/bootstrap.log -i /etc/kolla/inventory.ini
+      args:
+        executable: /bin/bash
+        chdir: /opt/kolla
+
+    - name: Kolla-Ansible OpenStack Precheck
+      ansible.builtin.shell: |
+        source /opt/kolla/bin/activate
+        /opt/kolla/bin/kolla-ansible prechecks --log-file /opt/kolla/precheck.log -i /etc/kolla/inventory.ini
+      args:
+        executable: /bin/bash
+        chdir: /opt/kolla
+
+    - name: Deploy Kolla-Ansible OpenStack
+      ansible.builtin.shell: |
+        source /opt/kolla/bin/activate
+        /opt/kolla/bin/kolla-ansible deploy --log-file /opt/kolla/deploy.log -i /etc/kolla/inventory.ini
+      args:
+        executable: /bin/bash
+        chdir: /opt/kolla
+
+    - name: Install Kolla-Ansible to venv
+      ansible.builtin.pip:
+        name: python-openstackclient
+        virtualenv: /opt/kolla
+
+    - name: Post-Deploy Kolla-Ansible OpenStack
+      ansible.builtin.shell: |
+        source /opt/kolla/bin/activate
+        /opt/kolla/bin/kolla-ansible post-deploy --log-file /opt/kolla/post-deploy.log -i /etc/kolla/inventory.ini
+      args:
+        executable: /bin/bash
+        chdir: /opt/kolla
+
+

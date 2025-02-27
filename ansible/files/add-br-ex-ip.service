@@ -1,0 +1,21 @@
+[Unit]
+Description=Add IP address to br-ex after it's available
+Wants=network-online.target
+After=network-online.target
+Before=network.target
+
+[Service]
+Type=oneshot
+TimeoutStartSec=120
+RemainAfterExit=yes
+ExecStart=/bin/bash -c '\
+    while ! ip link show br-ex > /dev/null 2>&1; do \
+        sleep 1; \
+    done; \
+    ip addr add 10.0.20.254/24 dev br-ex; \
+    ip link set dev br-ex up'
+ExecStop=/bin/sh -c 'ip addr del 10.0.20.254/24 dev br-ex'
+
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,159 @@
+- hosts: deployment
+  become: true
+  tasks:
+    - fail:
+       msg: "OS should be Ubuntu 24.04, not {{ ansible_distribution }} {{ ansible_distribution_version }}"
+      when: ansible_distribution != 'Ubuntu' or ansible_distribution_version != '24.04'
+
+    - name: Add cloud /etc/host template
+      ansible.builtin.copy:
+        src: hosts.debian.tmpl
+        dest: /etc/cloud/templates/hosts.debian.tmpl
+        mode: '0644'
+        force: true
+
+    - name: Replace /etc/hosts
+      ansible.builtin.copy:
+        src: hosts
+        dest: /etc/hosts
+        mode: '0644'
+        force: true
+
+    - name: Stop and disable unattended-upgrades service
+      systemd:
+        name: unattended-upgrades.service
+        state: stopped
+        enabled: no
+
+    - name: Fix LVM - Resize LV
+      ansible.builtin.shell: lvextend -l +100%FREE /dev/ubuntu-vg/ubuntu-lv
+      ignore_errors: true
+
+    - name: Resize Volume
+      ansible.builtin.shell: resize2fs /dev/mapper/ubuntu--vg-ubuntu--lv
+      ignore_errors: true
+
+- hosts: compute
+  become: true
+  tasks:
+    - fail:
+       msg: "OS should be Ubuntu 24.04, not {{ ansible_distribution }} {{ ansible_distribution_version }}"
+      when: ansible_distribution != 'Ubuntu' or ansible_distribution_version != '24.04'
+
+    - name: Add cloud /etc/host template
+      ansible.builtin.copy:
+        src: hosts.debian.tmpl
+        dest: /etc/cloud/templates/hosts.debian.tmpl
+        mode: '0644'
+        force: true
+
+    - name: Replace /etc/hosts
+      ansible.builtin.copy:
+        src: hosts
+        dest: /etc/hosts
+        mode: '0644'
+        force: true
+
+    - name: Stop and disable unattended-upgrades service
+      systemd:
+        name: unattended-upgrades.service
+        state: stopped
+        enabled: no
+
+    - name: Fix LVM - Resize LV
+      ansible.builtin.shell: lvextend -l +100%FREE /dev/ubuntu-vg/ubuntu-lv
+      ignore_errors: true
+
+    - name: Resize Volume
+      ansible.builtin.shell: resize2fs /dev/mapper/ubuntu--vg-ubuntu--lv
+      ignore_errors: true
+
+
+# Deployment is Set in inventory.ini. Can be localhost or Controller-01
+
+- hosts: deployment
+  become: true
+  tasks:
+    - name: install python3-pip python3-venv
+      ansible.builtin.apt:
+        pkg: 
+          - python3-pip
+          - python3-venv
+        state: present
+        update_cache: true
+
+    - name: Add requirements.txt
+      ansible.builtin.copy:
+        src: requirements.txt
+        dest: /opt/requirements.txt
+        mode: '0644'
+        force: true
+
+    - name: Create kolla venv
+      ansible.builtin.pip:
+        requirements: /opt/requirements.txt
+        virtualenv: /opt/kolla
+        virtualenv_command: /usr/bin/python3 -m venv
+
+    - name: Install Kolla-Ansible to venv
+      ansible.builtin.pip:
+        name: kolla-ansible
+        virtualenv: /opt/kolla
+
+    - name: create /etc/kolla directory
+      ansible.builtin.file:
+        path: /etc/kolla
+        state: directory
+        mode: '0755'
+        owner: root
+        group: root
+
+    - name: copy example passwords to /etc/kolla
+      ansible.builtin.copy:
+        src: /opt/kolla/share/kolla-ansible/etc_examples/kolla/passwords.yml
+        dest: /etc/kolla/passwords.yml
+        mode: '0644'
+        owner: root
+        group: root
+
+    - name: create /etc/kolla/globals.yml
+      ansible.builtin.copy:
+        src: globals.yml
+        dest: /etc/kolla/globals.yml
+        mode: '0644'
+        force: true
+
+    - name: place a copy of the inventory.ini in /etc/kolla/inventory.ini
+      ansible.builtin.copy:
+        src: ../../inventory.ini
+        dest: /etc/kolla/inventory.ini
+        mode: '0644'
+        force: true
+
+    - name: Install Kolla-Ansible Dependencies
+      ansible.builtin.shell: source /opt/kolla/bin/activate;/opt/kolla/bin/kolla-ansible install-deps -i /etc/kolla/inventory.ini
+      args:
+        executable: /bin/bash
+        chdir: /opt/kolla
+
+    - name: Generate Kolla Passwords
+      ansible.builtin.shell: |
+        source /opt/kolla/bin/activate
+        bin/kolla-genpwd
+      args:
+        chdir: /opt/kolla
+
+    - name: Configure Cinder for NFS - Create Config directory
+      ansible.builtin.file:
+        path: /etc/kolla/config
+        state: directory
+        mode: '0755'
+        owner: root
+        group: root
+
+    - name: Configure Cinder for NFS - Copy NFS Configuration 
+      ansible.builtin.copy:
+        src: nfs_shares
+        dest: /etc/kolla/config/nfs_shares
+        mode: '0644'
+        force: true
