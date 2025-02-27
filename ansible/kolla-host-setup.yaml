@@ -25,6 +25,9 @@
         state: stopped
         enabled: no
 
+    - name: Stop and disable unattended-upgrade service alternative
+      ansible.builtin.shell: /usr/bin/systemctl stop unattended-upgrades
+
     - name: Fix LVM - Resize LV
       ansible.builtin.shell: lvextend -l +100%FREE /dev/ubuntu-vg/ubuntu-lv
       ignore_errors: true

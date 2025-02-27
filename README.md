@@ -8,7 +8,7 @@ Kevin Jackson
 --
 Prereqs
 - Terraform or OpenTofu Installed
-- Proxmox VE 3.x
+- Proxmox VE 8.x
 - API User and Token created on Proxmox for Terraform
 
 Proxmox Networking
@@ -24,9 +24,9 @@ Proxmox Networking
 5. tofu init
 6. tofu plan -out "kolla-ansible.tfplan"
 7. tofu apply "kolla-ansible.tfplan"
-8. scp -r ansible root@controller-01:
-9. ssh controller-01
-10. apt install ansible-common
+8. scp -r inventory.ini ansible root@controller-01:
+9. ssh root@controller-01
+10. apt install ansible-core
 11. ssh-keyscan -H controller-01 >> ~/.ssh/known_hosts
 12. ssh-keyscan -H localhost >> ~/.ssh/known_hosts
 13. ansible-playbook ansible/kolla-host-setup.yaml -i inventory.ini
