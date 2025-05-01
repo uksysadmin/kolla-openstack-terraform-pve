@@ -7,13 +7,6 @@
 #
 127.0.0.1 localhost
 
-# PVE Clusters
-192.168.71.100 pve
-
-# Storage Node (NFS/S3)
-# Required for enable_cinder:yes, enable_cinder_backend_nfs: "yes" and nfs_shares
-192.168.71.99 openmediavault 
-
 # The following lines are desirable for IPv6 capable hosts
 ::1 localhost ip6-localhost ip6-loopback
 ff02::1 ip6-allnodes

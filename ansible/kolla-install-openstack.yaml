@@ -1,6 +1,12 @@
 - hosts: deployment
   become: true
   tasks:
+    - name: Update /etc/kolla/inventory.ini to connect as root
+      ansible.builtin.replace:
+        path: /etc/kolla/inventory.ini
+        regexp: 'ubuntu'
+        replace: 'root'
+
     - name: Bootstrap Kolla-Ansible OpenStack
       ansible.builtin.shell: |
         source /opt/kolla/bin/activate
@@ -37,5 +43,4 @@
       args:
         executable: /bin/bash
         chdir: /opt/kolla
-
 

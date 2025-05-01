@@ -5,10 +5,16 @@
        msg: "OS should be Ubuntu 24.04, not {{ ansible_distribution }} {{ ansible_distribution_version }}"
       when: ansible_distribution != 'Ubuntu' or ansible_distribution_version != '24.04'
 
+    - name: Set Configuration
+      ansible.builtin.include_vars:
+        file: config.yaml
+        name: host
+
     - name: Add cloud /etc/host template
       ansible.builtin.copy:
         src: hosts.debian.tmpl
         dest: /etc/cloud/templates/hosts.debian.tmpl
+        owner: root
         mode: '0644'
         force: true
 
@@ -19,14 +25,46 @@
         mode: '0644'
         force: true
 
-    - name: Stop and disable unattended-upgrades service
-      systemd:
-        name: unattended-upgrades.service
+    - name: Disable Unattended-Upgrades
+      ansible.builtin.systemd:
         state: stopped
-        enabled: no
+        enabled: false
+        name: unattended-upgrades
 
-    - name: Stop and disable unattended-upgrade service alternative
-      ansible.builtin.shell: sudo /usr/bin/pkill --signal SIGKILL -f unattended-upgrades
+    - name: Remove Unattended-Upgrades
+      ansible.builtin.apt:
+        state: absent
+        name: unattended-upgrades
+
+    - name: Use Apt-Cacher
+      when: host.use_apt_cacher | bool
+      lineinfile:
+        path: /etc/apt/apt.conf
+        line: "{{ host.apt_cacher_endpoint }}"
+        create: true
+
+    - name: Update apt cache
+      ansible.builtin.apt:
+        update_cache: yes
+
+    - name: Ensure root can SSH without issues
+      ansible.builtin.blockinfile:
+        path: /etc/ssh/ssh_config.d/noHostKeyCheck.conf
+        block: |
+          Host 192.168.70.*
+          StrictHostKeyChecking no
+          UserKnownHostsFile=/dev/null
+        insertafter: EOF
+        create: true
+
+    - name: Ansible No Host Key Checking
+      ansible.builtin.blockinfile:
+        path: /root/.ansible.cfg
+        block: |
+          [defaults]
+          host_key_checking = False
+        insertafter: EOF
+        create: true
 
     - name: Fix LVM - Resize LV
       ansible.builtin.shell: lvextend -l +100%FREE /dev/ubuntu-vg/ubuntu-lv
@@ -43,6 +81,11 @@
        msg: "OS should be Ubuntu 24.04, not {{ ansible_distribution }} {{ ansible_distribution_version }}"
       when: ansible_distribution != 'Ubuntu' or ansible_distribution_version != '24.04'
 
+    - name: Set Configuration
+      ansible.builtin.include_vars:
+        file: config.yaml
+        name: host
+
     - name: Add cloud /etc/host template
       ansible.builtin.copy:
         src: hosts.debian.tmpl
@@ -57,11 +100,27 @@
         mode: '0644'
         force: true
 
-    - name: Stop and disable unattended-upgrades service
-      systemd:
-        name: unattended-upgrades.service
+    - name: Disable Unattended-Upgrades
+      ansible.builtin.systemd:
         state: stopped
-        enabled: no
+        enabled: false
+        name: unattended-upgrades
+
+    - name: Remove Unattended-Upgrades
+      ansible.builtin.apt:
+        state: absent
+        name: unattended-upgrades
+
+    - name: Use Apt-Cacher
+      when: host.use_apt_cacher | bool
+      lineinfile:
+        path: /etc/apt/apt.conf
+        line: "{{ host.apt_cacher_endpoint }}"
+        create: true
+
+    - name: Update apt cache
+      ansible.builtin.apt:
+        update_cache: yes
 
     - name: Fix LVM - Resize LV
       ansible.builtin.shell: lvextend -l +100%FREE /dev/ubuntu-vg/ubuntu-lv
@@ -83,7 +142,12 @@
           - python3-pip
           - python3-venv
         state: present
-        update_cache: true
+        update_cache: false
+
+    - name: Set Configuration
+      ansible.builtin.include_vars:
+        file: config.yaml
+        name: host
 
     - name: Add requirements.txt
       ansible.builtin.copy:
@@ -113,6 +177,7 @@
 
     - name: copy example passwords to /etc/kolla
       ansible.builtin.copy:
+        remote_src: true
         src: /opt/kolla/share/kolla-ansible/etc_examples/kolla/passwords.yml
         dest: /etc/kolla/passwords.yml
         mode: '0644'
@@ -160,3 +225,4 @@
         dest: /etc/kolla/config/nfs_shares
         mode: '0644'
         force: true
+

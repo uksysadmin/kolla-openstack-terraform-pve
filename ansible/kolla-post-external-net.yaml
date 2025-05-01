@@ -10,7 +10,7 @@
 
     - name: Run the add-br-ex-ip.service
       ansible.builtin.systemd_service:
-        name: unattended-upgrades.service
+        name: add-br-ex-ip.service
         daemon_reload: true
         state: started
 

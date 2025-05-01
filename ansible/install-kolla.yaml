@@ -1,0 +1,4 @@
+---
+- import_playbook: kolla-host-setup.yaml
+- import_playbook: kolla-install-openstack.yaml
+- import_playbook: kolla-post-external-net.yaml

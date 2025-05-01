@@ -24,12 +24,45 @@ Proxmox Networking
 5. tofu init
 6. tofu plan -out "kolla-ansible.tfplan"
 7. tofu apply "kolla-ansible.tfplan"
-8. scp -r inventory.ini ansible root@controller-01:
-9. ssh root@controller-01
-10. apt install ansible-core
-11. ssh-keyscan -H controller-01 >> ~/.ssh/known_hosts
-12. ssh-keyscan -H localhost >> ~/.ssh/known_hosts
-13. ansible-playbook ansible/kolla-host-setup.yaml -i inventory.ini
-14. ssh-keyscan -H compute-01 >> ~/.ssh/known_hosts
-15. ssh-keyscan -H compute-02 >> ~/.ssh/known_hosts
-16. ansible-playbook ansible/kolla-install-openstack.yaml -i /etc/kolla/inventory.ini
+8. ansible-playbook ansible/install-kolla.yaml -i inventory.ini
+
+--
+# Apt-Cacher Configuration
+You can use apt-cacher-ng if available by editig ansible/config.yaml
+
+--
+# Post Install
+Run example runinit-once script matching the environments Floating IP Network
+
+```
+ssh ubuntu@controller-01
+source /opt/kolla/bin/activate
+
+cp /etc/kolla/clouds.yaml /etc/openstack
+
+export EXT_NET_CIDR=10.0.20.0/24
+export EXT_NET_RANGE='start=10.0.20.10,end=10.0.20.99'
+export EXT_NET_GATEWAY=10.0.20.1
+
+/opt/kolla/share/kolla-ansible/init-runonce
+```
+
+Create example Virtual Machine
+
+```
+openstack --os-cloud=kolla-admin server create \
+    --image cirros \
+    --flavor m1.tiny \
+    --key-name mykey \
+    --network demo-net \
+    demo1
+```
+
+---
+# Horizon
+Horizon available @ http://192.168.70.10/
+
+# Skyline
+SKyline available @ http://192.168.70.10:9999/
+
+Use the credentials found in /etc/kolla/admin-openrc.sh

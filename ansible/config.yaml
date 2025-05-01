@@ -1,0 +1,3 @@
+---
+use_apt_cacher: false
+apt_cacher_endpoint: 'Acquire::http::Proxy "http://_YOUR_CACHE_HERE_:3142";'
